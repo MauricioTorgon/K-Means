@@ -1,6 +1,9 @@
 from ucimlrepo import fetch_ucirepo 
 import pandas as pd
 import numpy as np
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score
+from sklearn.preprocessing import LabelEncoder
+import openpyxl
 
 # fetch dataset 
 breast_cancer = fetch_ucirepo(id=14) 
@@ -79,4 +82,12 @@ def kmeans_heom(X, k=2, max_iters=100):
     
     return clusters, centroids
 
-print(kmeans_heom(X))
+# 5. Evaluación del modelo y ejecución 20 veces
+results = []
+
+for _ in range(20):
+    clusters, centroids = kmeans_heom(X)
+    results.append(clusters,centroids)
+    
+# 6. Guardar los resultados en Excel
+df_results.to_excel('evaluacion.xlsx', index=False)

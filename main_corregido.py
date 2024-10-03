@@ -38,14 +38,14 @@ def heom_distance(x1, x2, tipos_datos):
             if tipos_datos[i]:  # Categórico
                 if x1[i] != x2[i]:
                     dist += 1
-                    print(f"\nDistancia categorica de {x1[i]} a {x2[i]} = {1}") #DEL
-                else:                                                                     #DEL
-                    print(f"\nDistancia categorica de {x1[i]} a {x2[i]} = {0}") #DEL 
+                    #print(f"\nDistancia categorica de {x1[i]} a {x2[i]} = {1}") #DEL
+                #else:                                                                  #DEL
+                    #print(f"\nDistancia categorica de {x1[i]} a {x2[i]} = {0}") #DEL 
             else:  # Continuo
                 try: 
-                    temp= (float(x1[i]) - float(x2[i])) ** 2 # Aseguramos que las variables continuas sean numéricas
+                    temp= (float(x1[i]) - float(x2[i])) ** 2 #/ max_range[i] ** 2# Aseguramos que las variables continuas sean numéricas
                     dist += temp  
-                    print(f"\nDistancia continua de {x1[i]} a {x2[i]} = {temp}")  #DEL
+                   # print(f"\nDistancia continua de {x1[i]} a {x2[i]} = {temp}")  #DEL
                 except ValueError:
                     dist += 1 if x1[i] != x2[i] else 0
     return np.sqrt(dist)
@@ -68,8 +68,36 @@ def kmeans_heom(X, k=2, max_iters=100):
         # Recalcular centroides
         new_centroids = []
         for cluster in clusters:
-            new_centroids.append(np.mean(cluster, axis=0))
-        new_centroids = np.array(new_centroids)
+            new_centroid = []
+            if len(cluster) == 0:
+                continue  # Evitar recalcular para clusters vacíos
+            
+            cluster_df = pd.DataFrame(cluster)  # Convertimos el cluster a un DataFrame
+
+            for col_idx, is_categorical in enumerate(tipos_datos):
+                if col_idx >= cluster_df.shape[1]:
+                    continue  # Evitar el acceso fuera de los límites
+
+                columna = cluster_df.iloc[:, col_idx]
+                
+                if is_categorical:  # Si es categórica
+                    # Filtramos valores no válidos como "?"
+                    valores_categoricos = [valor for valor in columna if valor != "?"]
+                    
+                    # Calculamos el "promedio categórico", es decir, el valor más frecuente
+                    promedio_categorico = max(set(valores_categoricos), key=valores_categoricos.count) if valores_categoricos else None
+                    new_centroid.append(promedio_categorico)
+                else:  # Si es continua
+                    # Intentamos convertir la columna a numérico (ignorando errores)
+                    columna_numerica = pd.to_numeric(columna, errors='coerce')
+                    
+                    # Calculamos la media de los valores numéricos
+                    promedio_continuo = columna_numerica.mean() if len(columna_numerica.dropna()) > 0 else None
+                    new_centroid.append(promedio_continuo)
+
+            new_centroids.append(new_centroid)
+        
+        new_centroids = np.array(new_centroids, dtype=object)  # Asegurarse de que los tipos se manejen correctamente
         
         # Si los centroides no cambian, se detiene
         if np.all(centroids == new_centroids):
