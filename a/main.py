@@ -11,7 +11,9 @@ breast_cancer = fetch_ucirepo(id=14)
 # data (as pandas dataframes) 
 X = breast_cancer.data.features 
 Y = breast_cancer.data.targets 
+print(Y)
 
+""""
 # 4. Definir si los atributos son categóricos o continuos
 tipos_datos = [
     True,  # class
@@ -27,10 +29,8 @@ tipos_datos = [
 ]
 
 def heom_distance(x1, x2, tipos_datos):
-    """
     Calcula la distancia HEOM entre dos instancias (x1 y x2).
     tipos_datos es una lista que indica si una columna es categórica (True) o continua (False).
-    """
     dist = 0
     for i in range(len(x1)):
         # Si alguna de las instancias tiene un valor faltante, sumamos 1
@@ -90,4 +90,4 @@ for _ in range(20):
     results.append(clusters,centroids)
     
 # 6. Guardar los resultados en Excel
-df_results.to_excel('evaluacion.xlsx', index=False)
+df_results.to_excel('evaluacion.xlsx', index=False)"""

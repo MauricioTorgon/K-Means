@@ -106,4 +106,53 @@ def kmeans_heom(X, k=2, max_iters=100):
     
     return clusters, centroids
 
-print(kmeans_heom(X))
+def matriz_confusion(y_real, y_pred, etiquetas=None):
+    """
+    Crea una matriz de confusión a partir de los valores reales y predichos.
+    
+    :param y_real: Lista o serie de valores reales (etiquetas verdaderas).
+    :param y_pred: Lista o serie de valores predichos por el modelo.
+    :param etiquetas: Lista de etiquetas (opcional). Si no se proporciona, se infiere de los datos.
+    :return: Matriz de confusión como un diccionario de diccionarios.
+    """
+    # Si no se proporcionan etiquetas, inferirlas de los datos
+    if etiquetas is None:
+        etiquetas = sorted(set(y_real) | set(y_pred))
+    
+    # Inicializar la matriz de confusión como un diccionario de diccionarios
+    matriz = {etiqueta_real: {etiqueta_pred: 0 for etiqueta_pred in etiquetas} for etiqueta_real in etiquetas}
+    
+    # Rellenar la matriz de confusión
+    for real, pred in zip(y_real, y_pred):
+        matriz[real][pred] += 1
+    
+    return matriz
+
+# Función para mostrar la matriz de confusión de forma más legible
+def mostrar_matriz_confusion(matriz):
+    etiquetas = sorted(matriz.keys())
+    encabezado = "   " + " ".join(f"{etiqueta:>25}" for etiqueta in etiquetas)
+    print(encabezado)
+    
+    for etiqueta_real in etiquetas:
+        fila = [f"{matriz[etiqueta_real][etiqueta_pred]:>25}" for etiqueta_pred in etiquetas]
+        print(f"{etiqueta_real:>25} " + " ".join(fila))
+
+# Ejemplo de uso
+Y = Y['Class'].tolist()  # Extraer la columna 'Class' como una lista
+y_pred = ['no-recurrence-events'] * 200 + ['recurrence-events'] * 86  # Simulación de predicciones
+
+matriz = matriz_confusion(Y, y_pred)
+mostrar_matriz_confusion(matriz)
+
+"""
+# 5. Evaluación del modelo y ejecución 20 veces
+results = []
+
+for _ in range(20):
+    clusters, centroids = kmeans_heom(X)
+    results.append((clusters,centroids))
+    
+# 6. Guardar los resultados en Excel
+df_results.to_excel('evaluacion.xlsx', index=False)
+"""
