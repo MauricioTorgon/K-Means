@@ -1,7 +1,8 @@
 from ucimlrepo import fetch_ucirepo 
 import pandas as pd
 import numpy as np
-
+import random
+from openpyxl import Workbook
 # fetch dataset 
 breast_cancer = fetch_ucirepo(id=14) 
   
@@ -138,6 +139,72 @@ def mostrar_matriz_confusion(matriz):
         fila = [f"{matriz[etiqueta_real][etiqueta_pred]:>25}" for etiqueta_pred in etiquetas]
         print(f"{etiqueta_real:>25} " + " ".join(fila))
 
+
+def calcular_metricas(matriz):
+    """
+    Calcula sensibilidad, exactitud, precisión y tasa de error a partir de una matriz de confusión.
+    matriz: Diccionario de diccionarios (matriz de confusión).
+    Retorna un diccionario con las métricas.
+    """
+    # Verdaderos positivos (TP), Falsos positivos (FP), Verdaderos negativos (TN), Falsos negativos (FN)
+    TP = matriz['recurrence-events']['recurrence-events']
+    FP = matriz['no-recurrence-events']['recurrence-events']
+    FN = matriz['recurrence-events']['no-recurrence-events']
+    TN = matriz['no-recurrence-events']['no-recurrence-events']
+    
+    # Calcular las métricas
+    sensibilidad = TP / (TP + FN) if (TP + FN) != 0 else 0
+    precision = TP / (TP + FP) if (TP + FP) != 0 else 0
+    exactitud = (TP + TN) / (TP + TN + FP + FN) if (TP + TN + FP + FN) != 0 else 0
+    tasa_error = (FP + FN) / (TP + TN + FP + FN) if (TP + TN + FP + FN) != 0 else 0
+    
+    return {
+        'Sensibilidad': sensibilidad,
+        'Precisión': precision,
+        'Exactitud': exactitud,
+        'Tasa de Error': tasa_error
+    }
+
+def simular_evaluaciones(Y, num_ejecuciones=20):
+    """
+    Simula 20 ejecuciones, calcula las métricas y las guarda en un archivo Excel.
+    Y: Etiquetas reales de clase.
+    num_ejecuciones: Número de ejecuciones a realizar (por defecto 20).
+    """
+    # Crear un DataFrame para almacenar los resultados
+    resultados = []
+    
+    for i in range(num_ejecuciones):
+        # Simulamos las predicciones aleatorias (puedes sustituirlo con un modelo real)
+        y_pred = [random.choice(['recurrence-events', 'no-recurrence-events']) for _ in range(len(Y))]
+        
+        # Crear la matriz de confusión
+        matriz = matriz_confusion(Y, y_pred)
+        
+        # Calcular las métricas para esta ejecución
+        metricas = calcular_metricas(matriz)
+        resultados.append(metricas)
+    
+    # Convertir los resultados en DataFrame
+    df_resultados = pd.DataFrame(resultados)
+    
+    # Calcular los promedios de cada métrica
+    promedios = df_resultados.mean().to_dict()
+    
+    # Añadir una fila de promedios al final
+    promedios['Sensibilidad'] = 'Promedio'  # Colocamos "Promedio" solo en una columna de texto
+    df_resultados = df_resultados._append(promedios, ignore_index=True)
+    
+    # Guardar los resultados en un archivo Excel
+    df_resultados.to_excel("evaluacion.xlsx", index=False)
+
+# Asumiendo que Y es una lista de etiquetas
+Y = Y['Class'].tolist()  # Asegúrate de que Y sea la columna de clases
+
+# Simular las evaluaciones y guardar el archivo
+simular_evaluaciones(Y)
+
+""""
 # Ejemplo de uso
 Y = Y['Class'].tolist()  # Extraer la columna 'Class' como una lista
 y_pred = ['no-recurrence-events'] * 200 + ['recurrence-events'] * 86  # Simulación de predicciones
@@ -145,7 +212,6 @@ y_pred = ['no-recurrence-events'] * 200 + ['recurrence-events'] * 86  # Simulaci
 matriz = matriz_confusion(Y, y_pred)
 mostrar_matriz_confusion(matriz)
 
-"""
 # 5. Evaluación del modelo y ejecución 20 veces
 results = []
 
