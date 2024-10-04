@@ -147,7 +147,7 @@ def simular_evaluaciones(Y, num_ejecuciones=20):
         y_pred = [random.choice(['recurrence-events', 'no-recurrence-events']) for _ in range(len(Y))]
         
         print(f"\nEjecutando simulación {i + 1}:")
-        print(f"Predicciones: {y_pred}")
+        #print(f"Predicciones: {y_pred}")
         
         matriz = matriz_confusion(Y, y_pred)
         
@@ -167,7 +167,7 @@ def simular_evaluaciones(Y, num_ejecuciones=20):
 # Ejecutar k-means para probar el clustering
 clusters, centroids = kmeans_heom(X, k=2, max_iters=10)
 
-# Asumiendo que Y es una lista de etiquetas
+# con Y a una lista de etiquetas
 Y = Y['Class'].tolist()
 
 # Ejecutar las simulaciones con las etiquetas de Y
