@@ -3,13 +3,15 @@ import pandas as pd
 import numpy as np
 import random
 from openpyxl import Workbook
+from tkinter import *
+import tkinter as tk
 
 # fetch dataset 
 breast_cancer = fetch_ucirepo(id=14) 
   
 # data (as pandas dataframes) 
 X = breast_cancer.data.features 
-Y = breast_cancer.data.targets 
+
 
 # Definir si los atributos son categóricos o continuos
 tipos_datos = [
@@ -25,6 +27,7 @@ tipos_datos = [
     True   # irradiat
 ]
 
+#Coloque tx en heom_distance y kmeans_heom, no se si dejarlo o quitarlo
 def heom_distance(x1, x2, tipos_datos):
     dist = 0
     faltantes = 0
@@ -42,31 +45,34 @@ def heom_distance(x1, x2, tipos_datos):
                     dist += temp  
                 except ValueError:
                     dist += 1 if x1[i] != x2[i] else 0
-    print(f"Total de valores faltantes en esta instancia: {faltantes}")
+    #tx1.insert(tk.INSERT,f"\nTotal de valores faltantes en esta instancia: {faltantes}")
+    #print(f"Total de valores faltantes en esta instancia: {faltantes}")
     return np.sqrt(dist)
 
-def kmeans_heom(X, k=2, max_iters=100):
+def kmeans_heom(X, tx1, k=2, max_iters=100):
     centroids = X.sample(n=k).values
     
     for iteration in range(max_iters):
-        print(f"\nIteración {iteration + 1}")
-        clusters = [[] for _ in range(k)]
+        tx1.insert(tk.INSERT,f"\nIteración {iteration + 1}")
+        #print(f"\nIteración {iteration + 1}")
+        
+        clusters = [[] for _ in range(k)]  # Lista para almacenar índices de puntos
         
         for i in range(len(X)):
             point = X.iloc[i].values
             distances = [heom_distance(point, centroid, tipos_datos) for centroid in centroids]
             cluster_idx = np.argmin(distances)
             
-            print(f"Punto {i} asignado al clúster {cluster_idx} con distancia {distances[cluster_idx]}")
-            
-            clusters[cluster_idx].append(point)
+            # Almacena el índice del punto en el clúster correspondiente
+            clusters[cluster_idx].append(i)
+            #print(f"Punto {i} asignado al clúster {cluster_idx} con distancia {distances[cluster_idx]}")
         
         new_centroids = []
-        for cluster_idx, cluster in enumerate(clusters):
-            if len(cluster) == 0:
+        for cluster_idx, cluster_indices in enumerate(clusters):
+            if len(cluster_indices) == 0:
                 continue
             
-            cluster_df = pd.DataFrame(cluster)
+            cluster_df = X.iloc[cluster_indices]  # Obtener DataFrame de los puntos en el clúster
             new_centroid = []
             
             for col_idx, is_categorical in enumerate(tipos_datos):
@@ -77,15 +83,16 @@ def kmeans_heom(X, k=2, max_iters=100):
                 
                 if is_categorical:  # Categórico
                     valores_categoricos = [valor for valor in columna if valor != "?"]
-                    promedio_categorico = max(set(valores_categoricos), key=valores_categoricos.count) if valores_categoricos else None
-                    new_centroid.append(promedio_categorico)
+                    promedio_categórico = max(set(valores_categoricos), key=valores_categoricos.count) if valores_categoricos else None
+                    new_centroid.append(promedio_categórico)
                 else:  # Continuo
                     columna_numerica = pd.to_numeric(columna, errors='coerce')
                     promedio_continuo = columna_numerica.mean() if len(columna_numerica.dropna()) > 0 else None
                     new_centroid.append(promedio_continuo)
             
             new_centroids.append(new_centroid)
-            print(f"Nuevo centroide para clúster {cluster_idx}: {new_centroid}")
+            tx1.insert(tk.INSERT,f"\nNuevo centroide para clúster {cluster_idx}: {new_centroid}\n")
+            #print(f"Nuevo centroide para clúster {cluster_idx}: {new_centroid}")
         
         new_centroids = np.array(new_centroids, dtype=object)
         
@@ -93,12 +100,14 @@ def kmeans_heom(X, k=2, max_iters=100):
             break
         centroids = new_centroids
     
-    for cluster_idx, cluster in enumerate(clusters):
-        print(f"\nClúster {cluster_idx}: contiene {len(cluster)} puntos")
+    #for cluster_idx, cluster_indices in enumerate(clusters):
+        #print(f"\nClúster {cluster_idx}: contiene {len(cluster_indices)} puntos (índices: {cluster_indices})")
     
-    print("\nCentroides finales:")
+    tx1.insert(tk.INSERT,f"\nCentroides finales:")
+    #print("\nCentroides finales:")
     for idx, centroid in enumerate(centroids):
-        print(f"Centroide {idx}: {centroid}")
+        tx1.insert(tk.INSERT,f"\nCentroide {idx}: {centroid}\n")
+        #print(f"Centroide {idx}: {centroid}")
     
     return clusters, centroids
 
@@ -113,16 +122,19 @@ def matriz_confusion(y_real, y_pred, etiquetas=None):
     
     return matriz
 
-def mostrar_matriz_confusion(matriz):
+def mostrar_matriz_confusion(matriz, tx1):
     etiquetas = sorted(matriz.keys())
     encabezado = "   " + " ".join(f"{etiqueta:>25}" for etiqueta in etiquetas)
-    print(encabezado)
+    #tx3.insert(tk.INSERT, f"\nK vecinos mas cercanos: \n{solo_numeros}\n")
+    tx1.insert(tk.INSERT, encabezado)
+    #print(encabezado)
     
     for etiqueta_real in etiquetas:
         fila = [f"{matriz[etiqueta_real][etiqueta_pred]:>25}" for etiqueta_pred in etiquetas]
-        print(f"{etiqueta_real:>25} " + " ".join(fila))
+        tx1.insert(tk.INSERT,f"\n{etiqueta_real:>25} " + " ".join(fila))
+        #print(f"{etiqueta_real:>25} " + " ".join(fila))
 
-def calcular_metricas(matriz):
+def calcular_metricas(matriz,):
     TP = matriz['recurrence-events']['recurrence-events']
     FP = matriz['no-recurrence-events']['recurrence-events']
     FN = matriz['recurrence-events']['no-recurrence-events']
@@ -140,31 +152,52 @@ def calcular_metricas(matriz):
         'Tasa de Error': tasa_error
     }
 
-def simular_evaluaciones(Y, num_ejecuciones=20):
-    resultados = []
+def evaluaciones(tx1, clusters):
+    Y = breast_cancer.data.targets
+    Y = Y['Class'].tolist()
+    y_pred = []
+    etiquetas_asignadas = set()
+
+    for cluster in clusters:
+
+        # Obtener las etiquetas reales de los puntos en el clúster usando los índices guardados
+        etiquetas_reales_cluster = [Y[idx] for idx in cluster]  # Acceder directamente a Y usando los índices
+        
+        etiquetas_reales_cluster = [etiqueta for etiqueta in etiquetas_reales_cluster if etiqueta not in etiquetas_asignadas]
+
+        if not etiquetas_reales_cluster:  # Si no quedan etiquetas no asignadas, continuar
+            continue
+
+        # Asignar la etiqueta mayoritaria
+        etiqueta_pred = max(set(etiquetas_reales_cluster), key=etiquetas_reales_cluster.count)
+        
+        # Marcar la etiqueta como asignada
+        etiquetas_asignadas.add(etiqueta_pred)
+        
+        # Asignar la etiqueta predicha a todos los puntos del clúster
+        y_pred.extend([etiqueta_pred] * len(cluster))
     
-    for i in range(num_ejecuciones):
-        y_pred = [random.choice(['recurrence-events', 'no-recurrence-events']) for _ in range(len(Y))]
-        
-        print(f"\nEjecutando simulación {i + 1}:")
-        #print(f"Predicciones: {y_pred}")
-        
-        matriz = matriz_confusion(Y, y_pred)
-        
-        print("Matriz de Confusión:")
-        mostrar_matriz_confusion(matriz)
-        
-        metricas = calcular_metricas(matriz)
-        resultados.append(metricas)
+    # Imprimir la matriz de confusión
+    matriz = matriz_confusion(Y, y_pred)
     
+    tx1.insert(tk.INSERT, f"\nMatriz de Confusión:")
+    #print("Matriz de Confusión:")
+    mostrar_matriz_confusion(matriz, tx1)
+    
+    metricas = calcular_metricas(matriz)
+    return metricas
+    
+
+def Guardar_excel(resultados,nombre_archivo):
     df_resultados = pd.DataFrame(resultados)
     promedios = df_resultados.mean().to_dict()
-    promedios['Sensibilidad'] = 'Promedio'
+    #promedios['Sensibilidad'] = 'Promedio'
     df_resultados = df_resultados._append(promedios, ignore_index=True)
     
-    df_resultados.to_excel("evaluacion.xlsx", index=False)
+    df_resultados.to_excel(nombre_archivo, index=False)
 
 # Ejecutar k-means para probar el clustering
+"""
 clusters, centroids = kmeans_heom(X, k=2, max_iters=10)
 
 # con Y a una lista de etiquetas
@@ -173,3 +206,4 @@ Y = Y['Class'].tolist()
 # Ejecutar las simulaciones con las etiquetas de Y
 simular_evaluaciones(Y)
 X.info
+"""
