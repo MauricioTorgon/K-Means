@@ -40,18 +40,29 @@ class gui:
 
     def Kmeans(self):
         interaciones = 20
-        Evaluacion_totales = []
         self.tx1.config(state="normal")
         self.tx1.delete("0.1", tk.END)
+        self.tx1.insert(tk.INSERT,f"\nEjecutando K-Means:")
         if self.cbx1.get() == 'K=2':
+            Evaluacion_totales = []
             # Ejecutar k-means para probar el clustering
-            self.tx1.insert(tk.INSERT,f"\nEjecutando simulación:")
             for i in range(interaciones):
-                clusters, centroids = kmeans_heom(X,tx1=self.tx1, k=2, max_iters=10)
+                clusters, centroids = kmeans_heom(X,tx1=self.tx1, k=2)
                 metricas=evaluaciones(tx1=self.tx1, clusters=clusters)
                 Evaluacion_totales.append(metricas)
             
-            Guardar_excel(Evaluacion_totales,nombre_archivo="evaluacion.xlsx")
+            Guardar_evaluaciones(Evaluacion_totales,nombre_archivo="evaluacion.xlsx")
+        else:
+            #Indice_K4=[]
+            #Indice_K6=[]
+
+            clusters_K4,centroids_K4 =kmeans_heom(X,tx1=self.tx1, k=4)
+
+            clusters_K6,centroids_K6=kmeans_heom(X,tx1=self.tx1, k=6)
+            #Indice_K6.append(clusters_K6)
+
+            Guardar_excel(X,clusters_K4, nombre_archivo="K-MEANSGROUP_K4.xlsx")
+            Guardar_excel(X,clusters_K6, nombre_archivo="K-MEANSGROUP_K6.xlsx")
             # Ejecutar las simulaciones con las etiquetas de Y
             
             #X.info
