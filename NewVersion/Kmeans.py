@@ -8,10 +8,9 @@ import tkinter as tk
 
 # fetch dataset 
 breast_cancer = fetch_ucirepo(id=14) 
-  
-# data (as pandas dataframes) 
-X = breast_cancer.data.features 
 
+# data (as pandas dataframes) 
+X = breast_cancer.data.features
 
 # Definir si los atributos son categóricos o continuos
 tipos_datos = [
@@ -27,8 +26,21 @@ tipos_datos = [
     True   # irradiat
 ]
 
-#Coloque tx en heom_distance y kmeans_heom, no se si dejarlo o quitarlo
-def heom_distance(x1, x2, tipos_datos):
+# Calcular los rangos de los atributos continuos
+def calcular_rango(X, tipos_datos):
+    rangos = {}
+    for col, is_categorical in zip(X.columns, tipos_datos):
+        if not is_categorical:  # Si es continuo
+            columna_numerica = pd.to_numeric(X[col], errors='coerce')
+            rango = columna_numerica.max() - columna_numerica.min()
+            rangos[col] = rango
+    return rangos
+
+# Obtener los rangos para las columnas continuas
+rangos_continuos = calcular_rango(X, tipos_datos)
+
+# Función HEOM ajustada para incluir el rango
+def heom_distance(x1, x2, tipos_datos, rangos_continuos):
     dist = 0
     faltantes = 0
     for i in range(len(x1)):
@@ -40,32 +52,30 @@ def heom_distance(x1, x2, tipos_datos):
                 if x1[i] != x2[i]:
                     dist += 1
             else:  # Continuo
-                try: 
+                rango = rangos_continuos[X.columns[i]]  # Obtener el rango de la columna
+                if rango == 0:  # Si el rango es 0, se trata como distancia normal
                     temp = (float(x1[i]) - float(x2[i])) ** 2
-                    dist += temp  
-                except ValueError:
-                    dist += 1 if x1[i] != x2[i] else 0
-    #tx1.insert(tk.INSERT,f"\nTotal de valores faltantes en esta instancia: {faltantes}")
-    #print(f"Total de valores faltantes en esta instancia: {faltantes}")
+                else:
+                    temp = ((float(x1[i]) - float(x2[i])) / rango) ** 2
+                dist += temp
     return np.sqrt(dist)
 
+# Función K-Means con HEOM
 def kmeans_heom(X, tx1, k, max_iters=100):
     centroids = X.sample(n=k).values
     
     for iteration in range(max_iters):
         tx1.insert(tk.INSERT,f"\nIteración {iteration + 1}")
-        #print(f"\nIteración {iteration + 1}")
         
         clusters = [[] for _ in range(k)]  # Lista para almacenar índices de puntos
         
         for i in range(len(X)):
             point = X.iloc[i].values
-            distances = [heom_distance(point, centroid, tipos_datos) for centroid in centroids]
+            distances = [heom_distance(point, centroid, tipos_datos, rangos_continuos) for centroid in centroids]
             cluster_idx = np.argmin(distances)
             
             # Almacena el índice del punto en el clúster correspondiente
             clusters[cluster_idx].append(i)
-            #print(f"Punto {i} asignado al clúster {cluster_idx} con distancia {distances[cluster_idx]}")
         
         new_centroids = []
         for cluster_idx, cluster_indices in enumerate(clusters):
@@ -92,7 +102,6 @@ def kmeans_heom(X, tx1, k, max_iters=100):
             
             new_centroids.append(new_centroid)
             tx1.insert(tk.INSERT,f"\nNuevo centroide para clúster {cluster_idx}: {new_centroid}\n")
-            #print(f"Nuevo centroide para clúster {cluster_idx}: {new_centroid}")
         
         new_centroids = np.array(new_centroids, dtype=object)
         
@@ -100,16 +109,13 @@ def kmeans_heom(X, tx1, k, max_iters=100):
             break
         centroids = new_centroids
     
-    #for cluster_idx, cluster_indices in enumerate(clusters):
-        #print(f"\nClúster {cluster_idx}: contiene {len(cluster_indices)} puntos (índices: {cluster_indices})")
-    
     tx1.insert(tk.INSERT,f"\nCentroides finales:")
-    #print("\nCentroides finales:")
     for idx, centroid in enumerate(centroids):
         tx1.insert(tk.INSERT,f"\nCentroide {idx}: {centroid}\n")
-        #print(f"Centroide {idx}: {centroid}")
     
     return clusters, centroids
+
+
 
 def matriz_confusion(y_real, y_pred, etiquetas=None):
     if etiquetas is None:
