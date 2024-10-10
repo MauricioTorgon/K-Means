@@ -52,6 +52,7 @@ class gui:
                 Evaluacion_totales.append(metricas)
             
             Guardar_evaluaciones(Evaluacion_totales,nombre_archivo="evaluacion.xlsx")
+            Guardar_excel(X,Y,clusters,nombre_archivo="K-MEANSGROUP_K2.xlsx")
         else:
             #Indice_K4=[]
             #Indice_K6=[]
