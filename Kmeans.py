@@ -29,9 +29,9 @@ tipos_datos = [
 # Calcular los rangos de los atributos continuos
 def calcular_rango(X, tipos_datos):
     rangos = {}
-    for col, is_categorical in zip(X.columns, tipos_datos):
-        if not is_categorical:  # Si es continuo
-            columna_numerica = pd.to_numeric(X[col], errors='coerce')
+    for col, es_categorico in zip(X.columns, tipos_datos): #zip devuelve tuplas con (nombre_columna,tipos_datos)
+        if not es_categorico:  # Si es continuo
+            columna_numerica = pd.to_numeric(X[col], errors='coerce') #manejo de string a numerico
             rango = columna_numerica.max() - columna_numerica.min()
             rangos[col] = rango
     return rangos
@@ -41,24 +41,22 @@ rangos_continuos = calcular_rango(X, tipos_datos)
 
 # Función HEOM ajustada para incluir el rango
 def heom_distance(x1, x2, tipos_datos, rangos_continuos):
-    dist = 0
-    faltantes = 0
+    distacia = 0
     for i in range(len(x1)):
-        if pd.isna(x1[i]) or pd.isna(x2[i]):
-            dist += 1
-            faltantes += 1
+        if pd.isna(x1[i]) or pd.isna(x2[i]): #Overlap
+            distacia += 1
         else:
             if tipos_datos[i]:  # Categórico
                 if x1[i] != x2[i]:
-                    dist += 1
+                    distacia += 1
             else:  # Continuo
                 rango = rangos_continuos[X.columns[i]]  # Obtener el rango de la columna
                 if rango == 0:  # Si el rango es 0, se trata como distancia normal
                     temp = (float(x1[i]) - float(x2[i])) ** 2
                 else:
                     temp = ((float(x1[i]) - float(x2[i])) / rango) ** 2
-                dist += temp
-    return np.sqrt(dist)
+                distacia += temp
+    return np.sqrt(distacia)
 
 # Función K-Means con HEOM
 def kmeans_heom(X, tx1, k, max_iters=100):
@@ -66,7 +64,6 @@ def kmeans_heom(X, tx1, k, max_iters=100):
     
     for iteration in range(max_iters):
         tx1.insert(tk.INSERT,f"\nIteración {iteration + 1}")
-        
         clusters = [[] for _ in range(k)]  # Lista para almacenar índices de puntos
         
         for i in range(len(X)):
@@ -85,13 +82,13 @@ def kmeans_heom(X, tx1, k, max_iters=100):
             cluster_df = X.iloc[cluster_indices]  # Obtener DataFrame de los puntos en el clúster
             new_centroid = []
             
-            for col_idx, is_categorical in enumerate(tipos_datos):
+            for col_idx, es_categorico in enumerate(tipos_datos):
                 if col_idx >= cluster_df.shape[1]:
                     continue
                 
                 columna = cluster_df.iloc[:, col_idx]
                 
-                if is_categorical:  # Categórico
+                if es_categorico:  # Categórico
                     valores_categoricos = [valor for valor in columna if valor != "?"]
                     promedio_categórico = max(set(valores_categoricos), key=valores_categoricos.count) if valores_categoricos else None
                     new_centroid.append(promedio_categórico)
@@ -160,15 +157,13 @@ def calcular_metricas(matriz,):
 
 def evaluaciones(tx1, clusters):
     Y = breast_cancer.data.targets
-    Y = Y['Class'].tolist()
+    Y = Y['Class'].tolist() #Convierte la clase en una lista unidimensional para su manejo
     y_pred = []
     etiquetas_asignadas = set()
-
     for cluster in clusters:
-
         # Obtener las etiquetas reales de los puntos en el clúster usando los índices guardados
         etiquetas_reales_cluster = [Y[idx] for idx in cluster]  # Acceder directamente a Y usando los índices
-        
+        #filtra la lista resultante de la primera línea, eliminando las etiquetas que ya han sido asignadas en otros clústeres.
         etiquetas_reales_cluster = [etiqueta for etiqueta in etiquetas_reales_cluster if etiqueta not in etiquetas_asignadas]
 
         if not etiquetas_reales_cluster:  # Si no quedan etiquetas no asignadas, continuar
@@ -198,35 +193,10 @@ def Guardar_evaluaciones(resultados,nombre_archivo):
     df_resultados = pd.DataFrame(resultados)
     promedios = df_resultados.mean().to_dict()
     df_resultados = df_resultados._append(promedios, ignore_index=True)
-    
     df_resultados.to_excel(nombre_archivo, index=False)
 
 def Guardar_excel(X, indices,nombre_archivo):
-    """
-    df_objectos = pd.DataFrame(objetos)
-    df_objectos.to_excel(nombre_archivo, index=False)
-
     X = pd.DataFrame(X)
-
-    # Crea un objeto ExcelWriter para guardar múltiples hojas
-    with pd.ExcelWriter(nombre_archivo) as writer:
-        cluster_guardado = False  # Variable para verificar si al menos un cluster se guardó
-        for i, idx_cluster in enumerate(indices):
-            if idx_cluster and len(idx_cluster) > 0:  # Verifica que no esté vacío
-                try:
-                    df_cluster = X.iloc[idx_cluster]  # Selecciona los objetos del cluster
-                    df_cluster.to_excel(writer, sheet_name=f'Cluster_{i+1}', index=False)
-                    cluster_guardado = True  # Se ha guardado al menos un cluster
-                except Exception as e:
-                    print(f"Error al guardar el Cluster {i+1}: {e}")
-            else:
-                print(f"Cluster {i+1} está vacío y no se guardará.")
-
-        if not cluster_guardado:
-            print("No se encontraron datos para guardar en el archivo Excel.")
-    """
-    X = pd.DataFrame(X)
-
     # Crea un objeto ExcelWriter para guardar múltiples hojas
     with pd.ExcelWriter(nombre_archivo) as writer:
         for i, idx_cluster in enumerate(indices):
@@ -236,26 +206,3 @@ def Guardar_excel(X, indices,nombre_archivo):
                 df_cluster.to_excel(writer, sheet_name=f'Cluster_{i+1}', index=False)
             else:
                 print(f"Cluster {i+1} está vacío y no se guardará.")
-
-"""
-def Conseguir_objetos(X, indice):
-    objetos_generados=[]
-    X=pd.DataFrame(X)
-    #print(f"Índice: {indice}, Tipo: {type(indice)}")
-    for i in indice:
-        for idx in i:
-        #objeto_nuevo=pd.DataFrame(columns=['Columna 1','Columna 2','Columna 3','Columna 4','Columna 5','Columna 6','Columna 7','Columna 8','Columna 9'])
-            #print(f"Índice: {idx}, Tipo: {type(idx)}")
-            objeto_nuevo = X.iloc[idx]
-            objetos_generados.append(objeto_nuevo)
-    return [pd.concat(objetos_generados, axis=0)]
-
-# Ejecutar k-means para probar el clustering
-
-clusters, centroids = kmeans_heom(X, k=2, max_iters=10)
-
-# con Y a una lista de etiquetas
-Y = Y['Class'].tolist()
-
-# Ejecutar las simulaciones con las etiquetas de Y
-"""
