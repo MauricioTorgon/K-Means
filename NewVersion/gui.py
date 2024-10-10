@@ -48,7 +48,7 @@ class gui:
             # Ejecutar k-means para probar el clustering
             for i in range(interaciones):
                 clusters, centroids = kmeans_heom(X,tx1=self.tx1, k=2)
-                metricas=evaluaciones(tx1=self.tx1, clusters=clusters)
+                metricas=evaluaciones(Y,tx1=self.tx1, clusters=clusters)
                 Evaluacion_totales.append(metricas)
             
             Guardar_evaluaciones(Evaluacion_totales,nombre_archivo="evaluacion.xlsx")
@@ -61,8 +61,8 @@ class gui:
             clusters_K6,centroids_K6=kmeans_heom(X,tx1=self.tx1, k=6)
             #Indice_K6.append(clusters_K6)
 
-            Guardar_excel(X,clusters_K4, nombre_archivo="K-MEANSGROUP_K4.xlsx")
-            Guardar_excel(X,clusters_K6, nombre_archivo="K-MEANSGROUP_K6.xlsx")
+            Guardar_excel(X,Y,clusters_K4, nombre_archivo="K-MEANSGROUP_K4.xlsx")
+            Guardar_excel(X,Y,clusters_K6, nombre_archivo="K-MEANSGROUP_K6.xlsx")
             # Ejecutar las simulaciones con las etiquetas de Y
             
             #X.info

@@ -1,7 +1,6 @@
 from ucimlrepo import fetch_ucirepo 
 import pandas as pd
 import numpy as np
-import random
 from openpyxl import Workbook
 from tkinter import *
 import tkinter as tk
@@ -10,7 +9,8 @@ import tkinter as tk
 breast_cancer = fetch_ucirepo(id=14) 
   
 # data (as pandas dataframes) 
-X = breast_cancer.data.features 
+X = breast_cancer.data.features
+Y = breast_cancer.data.targets
 
 
 # Definir si los atributos son categóricos o continuos
@@ -152,8 +152,8 @@ def calcular_metricas(matriz,):
         'Tasa de Error': tasa_error
     }
 
-def evaluaciones(tx1, clusters):
-    Y = breast_cancer.data.targets
+def evaluaciones(Y,tx1, clusters):
+    
     Y = Y['Class'].tolist()
     y_pred = []
     etiquetas_asignadas = set()
@@ -195,38 +195,17 @@ def Guardar_evaluaciones(resultados,nombre_archivo):
     
     df_resultados.to_excel(nombre_archivo, index=False)
 
-def Guardar_excel(X, indices,nombre_archivo):
-    """
-    df_objectos = pd.DataFrame(objetos)
-    df_objectos.to_excel(nombre_archivo, index=False)
-
+def Guardar_excel(X, Y, indices,nombre_archivo):
     X = pd.DataFrame(X)
-
-    # Crea un objeto ExcelWriter para guardar múltiples hojas
-    with pd.ExcelWriter(nombre_archivo) as writer:
-        cluster_guardado = False  # Variable para verificar si al menos un cluster se guardó
-        for i, idx_cluster in enumerate(indices):
-            if idx_cluster and len(idx_cluster) > 0:  # Verifica que no esté vacío
-                try:
-                    df_cluster = X.iloc[idx_cluster]  # Selecciona los objetos del cluster
-                    df_cluster.to_excel(writer, sheet_name=f'Cluster_{i+1}', index=False)
-                    cluster_guardado = True  # Se ha guardado al menos un cluster
-                except Exception as e:
-                    print(f"Error al guardar el Cluster {i+1}: {e}")
-            else:
-                print(f"Cluster {i+1} está vacío y no se guardará.")
-
-        if not cluster_guardado:
-            print("No se encontraron datos para guardar en el archivo Excel.")
-    """
-    X = pd.DataFrame(X)
+    Y = pd.DataFrame(Y)
 
     # Crea un objeto ExcelWriter para guardar múltiples hojas
     with pd.ExcelWriter(nombre_archivo) as writer:
         for i, idx_cluster in enumerate(indices):
             # Verifica que haya índices para el cluster
             if idx_cluster:  # Esto asegura que no está vacío
-                df_cluster = X.iloc[idx_cluster]  # Selecciona los objetos del cluster
+                df_cluster = X.iloc[idx_cluster].copy()  # Selecciona los objetos del cluster
+                df_cluster['Class'] = Y.iloc[idx_cluster].squeeze() 
                 df_cluster.to_excel(writer, sheet_name=f'Cluster_{i+1}', index=False)
             else:
                 print(f"Cluster {i+1} está vacío y no se guardará.")
