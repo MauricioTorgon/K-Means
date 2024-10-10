@@ -155,7 +155,7 @@ def calcular_metricas(matriz,):
 def evaluaciones(Y,tx1, clusters):
     
     Y = Y['Class'].tolist()
-    y_pred = []
+    y_pred = [None] * len(Y)  # Inicializar y_pred con None para cada índice
     etiquetas_asignadas = set()
 
     for cluster in clusters:
@@ -175,7 +175,8 @@ def evaluaciones(Y,tx1, clusters):
         etiquetas_asignadas.add(etiqueta_pred)
         
         # Asignar la etiqueta predicha a todos los puntos del clúster
-        y_pred.extend([etiqueta_pred] * len(cluster))
+        for idx in cluster:
+            y_pred[idx] = etiqueta_pred
     
     # Imprimir la matriz de confusión
     matriz = matriz_confusion(Y, y_pred)
